@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChemBot - Chemistry Chat Assistant</title>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+        background: #0f172a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .chat-container {
+        width: 100%;
+        max-width: 600px;
+        height: 85vh;
+        background: #1e293b;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .chat-header {
+        background: #16a34a;
+        color: #ffffff;
+        padding: 18px 20px;
+        text-align: center;
+    }
+
+    .chat-header h1 {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .chat-header p {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 4px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        line-height: 1.4;
+        font-size: 14px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .message.bot {
+        background: #334155;
+        color: #e2e8f0;
+        align-self: flex-start;
+        border-bottom-left-radius: 2px;
+    }
+
+    .message.user {
+        background: #16a34a;
+        color: #ffffff;
+        align-self: flex-end;
+        border-bottom-right-radius: 2px;
+    }
+
+    .message.typing {
+        font-style: italic;
+        opacity: 0.7;
+    }
+
+    .chat-input-area {
+        display: flex;
+        padding: 14px;
+        gap: 10px;
+        border-top: 1px solid #334155;
+        background: #1e293b;
+    }
+
+    #user-input {
+        flex: 1;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: none;
+        outline: none;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-size: 14px;
+    }
+
+    #send-btn {
+        background: #16a34a;
+        color: #ffffff;
+        border: none;
+        padding: 0 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background 0.2s ease;
+    }
+
+    #send-btn:hover {
+        background: #15803d;
+    }
+
+    #send-btn:disabled {
+        background: #475569;
+        cursor: not-allowed;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 4px;
+    }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>ChemBot</h1>
+        <p>Your Chemistry study assistant</p>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+        <div class="message bot">
+            Hi! I'm ChemBot 🧪 Ask me anything about Chemistry.
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Ask a Chemistry question..." autocomplete="off">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById("chat-messages");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+
+    function appendMessage(text, sender) {
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message", sender);
+        messageDiv.textContent = text;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageDiv;
+    }
+
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        appendMessage(message, "user");
+        userInput.value = "";
+        sendBtn.disabled = true;
+
+        const typingDiv = appendMessage("ChemBot is thinking...", "bot typing");
+
+        try {
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await response.json();
+            typingDiv.remove();
+            appendMessage(data.reply, "bot");
+        } catch (error) {
+            typingDiv.remove();
+            appendMessage("Something went wrong. Please try again.", "bot");
+        } finally {
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>
